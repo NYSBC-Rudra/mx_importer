@@ -2,15 +2,10 @@ import os
 from typing import Dict, Any
 import time
 import getpass
-import amostra.client.commands as acc
-import conftrak.client.commands as ccc
-
-# from analysisstore.client.commands import AnalysisClient
-import conftrak.exceptions
-
+import redis
 
 class DBConnection:
-    def __init__(self, beamline_id="99id1", host=None, owner=None):
+    def __init__(self, beamline_id="nyx", host=None, owner=None):
         if not host:
             main_server = os.environ.get("MONGODB_HOST", "localhost")
         else:
@@ -22,13 +17,14 @@ class DBConnection:
             "metadataservice": {"host": main_server, "port": "7772"},
             "analysisstore": {"host": main_server, "port": "7773"},
         }
-        self.sample_ref = acc.SampleReference(**services_config["amostra"])
-        self.container_ref = acc.ContainerReference(**services_config["amostra"])
-        self.request_ref = acc.RequestReference(**services_config["amostra"])
+        # self.sample_ref = acc.SampleReference(**services_config["amostra"])
+        # self.container_ref = acc.ContainerReference(**services_config["amostra"])
+        # self.request_ref = acc.RequestReference(**services_config["amostra"])
 
-        self.configuration_ref = ccc.ConfigurationReference(
-            **services_config["conftrak"]
-        )
+        # self.configuration_ref = ccc.ConfigurationReference(
+        #     **services_config["conftrak"]
+        # )
+        self.client = redis.Redis(host="10.67.147.227", port=3900, db=0)
         self.beamline_id = beamline_id
         if owner is not None:
             self.owner = getpass.getuser()

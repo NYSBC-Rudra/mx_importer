@@ -3,5 +3,4 @@ xlrd
 openpyxl
 qtpy
 PyQt5
-conftrak
-amostra==0.2.4
+redis-py
