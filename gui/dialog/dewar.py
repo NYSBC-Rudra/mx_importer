@@ -1,7 +1,6 @@
 import functools
 import typing
 
-from db_lib import DBConnection
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
 
