@@ -108,8 +108,8 @@ class DewarDialog(QtWidgets.QDialog):
         puck = possible_pucks[0]
         dewarObj = self.connection.getFromRedis('NyxDewar')
         eval(dewarObj)
-        print(dewarObj)
-        dewarObj['content'][position] = puck
+        print(dewarObj['content'])
+        dewarObj['content'][int(position)] = puck
         dewarObj['pucks'].append(puckName)
         print('sending dewar to redis \n {}'.format(dewarObj))
         self.connection.sendToRedis('NyxDewar',str(dewarObj))
