@@ -107,7 +107,7 @@ class DewarDialog(QtWidgets.QDialog):
             return
         puck = possible_pucks[0]
         dewarObj = self.connection.getFromRedis('NyxDewar')
-        eval(dewarObj)
+        dewarObj = eval(dewarObj)
         print(dewarObj['content'])
         dewarObj['content'][int(position)] = puck
         dewarObj['pucks'].append(puckName)
