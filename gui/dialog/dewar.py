@@ -80,14 +80,14 @@ class DewarDialog(QtWidgets.QDialog):
         self.setLayout(layout)
 
     def on_button(self, n):
-        print(n)
         
         if 'Empty' in self.allButtonList[int(n)].text():
             self.dewarPos = n
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
             #print(self.parent.all_pucks)
             self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
-            self.puck_window.show() 
+            chosen_puck = self.puck_window.getPuckName()
+            print(chosen_puck)
 
         else:
             self.dewarPos = n
