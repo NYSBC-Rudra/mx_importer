@@ -47,7 +47,7 @@ class DBConnection:
         #uid = self.container_ref.create(
         #    name=name, owner=self.owner, kind=kind, modified_time=time.time(), **kwargs
         #)
-        newpuck = {1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '', 8: '', 9: '', 10: '', 11: '', 12: '', 13: '', 14: '', 15: '', 16: '', 'name':name, 'kind':kind}
+        newpuck = {1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '', 8: '', 9: '', 10: '', 11: '', 12: '', 13: '', 14: '', 15: '', 0: '', 'name':name, 'kind':kind}
         return newpuck
 
     def getOrCreateContainerID(self, name: str, capacity: int, kind: str, **kwargs):
