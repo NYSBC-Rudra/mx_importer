@@ -28,7 +28,7 @@ class DewarDialog(QtWidgets.QDialog):
         #[''*28]
         self.data = []
         self.dewarPos = None
-        for i in range(len(puckLocs)):
+        for i in range(0,29):
             if puckLocs[i] != "":
                 puck_name = puckLocs[i]['name']
                 #owner = db_lib.getContainerByID(puckLocs[i])["owner"]
