@@ -44,10 +44,11 @@ class DBConnection:
     def createContainer(self, name: str, capacity: int, kind: str, **kwargs):
         if capacity is not None:
             kwargs["content"] = [""] * capacity
-        uid = self.container_ref.create(
-            name=name, owner=self.owner, kind=kind, modified_time=time.time(), **kwargs
-        )
-        return uid
+        #uid = self.container_ref.create(
+        #    name=name, owner=self.owner, kind=kind, modified_time=time.time(), **kwargs
+        #)
+        newpuck = {1: '', 2: '', 3: '', 4: '', 5: '', 6: '', 7: '', 8: '', 9: '', 10: '', 11: '', 12: '', 13: '', 14: '', 15: '', 16: '', 'name':name, 'kind':kind}
+        return newpuck
 
     def getOrCreateContainerID(self, name: str, capacity: int, kind: str, **kwargs):
         container = self.getContainer(
@@ -139,13 +140,16 @@ class DBConnection:
             return samples[0]
         return {}
 
-    def createSample(self, sample_name, kind="pin", proposalID=None, **kwargs):
+    def createSample(self, sample_name, kind="pin", proposalID=None, container=None, **kwargs):
         if "request_count" not in kwargs:
             kwargs["request_count"] = 0
-        return self.sample_ref.create(
-            name=sample_name,
-            owner=self.owner,
-            kind=kind,
-            proposalID=proposalID,
-            **kwargs
-        )
+        
+        #return self.sample_ref.create(
+        #    name=sample_name,
+        #    owner=self.owner,
+        #    kind=kind,
+        #    proposalID=proposalID,
+        #    **kwargs
+        #)
+        sampledict = {'name':sample_name, 'kind':kind, 'proposalID':proposalID, 'puck_name':container}
+        return sampledict
