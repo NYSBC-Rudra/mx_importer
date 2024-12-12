@@ -13,9 +13,10 @@ class PuckDialog(QtWidgets.QDialog):
         self.parent = parent
         self.all_pucks = pucklist
         self.position = container_position
-        print("in puck_dialog = {}".format(self.all_pucks))
+        print("in puck_dialog, position= {}".format(self.position))
+        print("in puck_dialog, all pucks importing = {}".format(self.all_pucks))
         self.redis_connection = DBConnection()
-        print("in puck_dialog = {}".format(self.parent.allButtonList[int(self.position)].text()))
+        our_button = self.parent.allButtonList[int(self.position)]
         self.initData()
         self.initUI()
 
