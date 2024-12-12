@@ -87,7 +87,6 @@ class DewarDialog(QtWidgets.QDialog):
             #print(self.parent.all_pucks)
             #self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
             chosen_puck = PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))[0]
-            print(int(self.dewarPos))
             self.fillContainerPosition(int(self.dewarPos), chosen_puck)
 
         else:
@@ -109,6 +108,7 @@ class DewarDialog(QtWidgets.QDialog):
         puck = possible_pucks[0]
         dewarObj = self.connection.getFromRedis('NyxDewar')
         eval(dewarObj)
+        print(dewarObj)
         dewarObj['content'][position] = puck
         dewarObj['pucks'].append(puckName)
         print('sending dewar to redis \n {}'.format(dewarObj))
