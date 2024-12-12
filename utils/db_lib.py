@@ -51,13 +51,13 @@ class DBConnection:
         return newpuck
 
     def getOrCreateContainerID(self, name: str, capacity: int, kind: str, **kwargs):
-        container = self.getContainer(
-            filter={"name": name, "kind": kind, "owner": self.owner}
-        )
-        if not container:
-            container_id = self.createContainer(name, capacity, kind, **kwargs)
-        else:
-            container_id = container["uid"]
+        #container = self.getContainer(
+        #    filter={"name": name, "kind": kind, "owner": self.owner}
+        #)
+        #if not container:
+        container_id = self.createContainer(name, capacity, kind, **kwargs)
+        #else:
+        #    container_id = container["uid"]
         return container_id
 
     def updateContainer(
