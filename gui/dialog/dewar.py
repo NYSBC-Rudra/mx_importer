@@ -28,6 +28,7 @@ class DewarDialog(QtWidgets.QDialog):
         #[''*28]
         self.data = []
         self.dewarPos = None
+        #max 29 values in dewar object
         for i in range(0,29):
             if puckLocs[i] != "":
                 puck_name = puckLocs[i]['name']
