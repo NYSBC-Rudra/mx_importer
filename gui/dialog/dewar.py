@@ -123,6 +123,7 @@ class DewarDialog(QtWidgets.QDialog):
         puckname = dewarObj['content'][position]['name']
         dewarObj['content'][position] = ''
         dewarObj['pucks'].remove(puckname)
+        self.connection.sendToRedis('NyxDewar',str(dewarObj))
         return
 
 
