@@ -90,7 +90,7 @@ class PuckDialog(QtWidgets.QDialog):
         self.puckName = text
 
     @staticmethod
-    def getPuckName(parent=None):
-        dialog = PuckDialog(parent)
+    def getPuckName(parent=None, pucklist=[], container_position=0 ):
+        dialog = PuckDialog(parent,pucklist, container_position=0 )
         result = dialog.exec_()
         return (dialog.puckName, result == QtWidgets.QDialog.Accepted)
