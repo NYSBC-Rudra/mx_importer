@@ -21,6 +21,7 @@ class DewarDialog(QtWidgets.QDialog):
 
     def initData(self):
         dewarObj = self.connection.getFromRedis('NyxDewar')
+        dewarObj = eval(dewarObj)
         if dewarObj is None:
             dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar'}
         puckLocs = dewarObj["content"]
