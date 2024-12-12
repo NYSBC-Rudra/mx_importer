@@ -39,7 +39,7 @@ class DewarDialog(QtWidgets.QDialog):
                 #owner = db_lib.getContainerByID(puckLocs[i])["owner"]
                 self.data.append(puck_name)
             else:
-                self.data.append("hello")
+                self.data.append("Empty")
         #logger.info(self.data)
 
     def initUI(self):
@@ -81,12 +81,12 @@ class DewarDialog(QtWidgets.QDialog):
 
     def on_button(self, n):
         print(n)
-        print(self.allButtonList[int(n)].text())
+        
         if 'Empty' in self.allButtonList[int(n)].text():
             self.dewarPos = n
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
             #print(self.parent.all_pucks)
-            self.puck_window = PuckDialog(self, self.parent.all_pucks)
+            self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
             self.puck_window.show() 
 
         else:

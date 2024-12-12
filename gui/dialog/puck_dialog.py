@@ -8,11 +8,13 @@ from utils.db_lib import DBConnection
 
 
 class PuckDialog(QtWidgets.QDialog):
-    def __init__(self, parent, pucklist):
+    def __init__(self, parent, pucklist, container_position=0 ):
         super(PuckDialog, self).__init__(parent)
         self.all_pucks = pucklist
+        self.position = container_position
         print("in puck_dialog = {}".format(self.all_pucks))
         self.redis_connection = DBConnection()
+        print("in puck_dialog = {}".format(self.parent.allButtonList[int(self.position)].text()))
         self.initData()
         self.initUI()
 
