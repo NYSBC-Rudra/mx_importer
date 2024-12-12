@@ -8,8 +8,9 @@ from utils.db_lib import DBConnection
 
 
 class PuckDialog(QtWidgets.QDialog):
-    def __init__(self, parent):
+    def __init__(self, parent, pucklist):
         super(PuckDialog, self).__init__(parent)
+        self.all_pucks = pucklist
         print(self.all_pucks)
         self.initData()
         self.initUI()
