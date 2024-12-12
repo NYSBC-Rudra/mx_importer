@@ -1,35 +1,40 @@
 import functools
-import logging
 import typing
 
+from db_lib import DBConnection
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
 
 
 
 class DewarDialog(QtWidgets.QDialog):
-    def __init__(self, parent: "ControlMain", action="add"):
+    def __init__(self, parent: "ControlMain"):
         super(DewarDialog, self).__init__(parent)
         self.pucksPerDewarSector = 7
         self.dewarSectors = 4
-        self.action = action
+        #self.action = action
+        self.action = "remove"
         self.parent = parent
-
+        self.connection = DBConnection()
         self.initData()
         self.initUI()
 
     def initData(self):
-        dewarObj = db_lib.getPrimaryDewar(daq_utils.beamline)
+        dewarObj = self.connection.getFromRedis('NyxDewar')
+        if dewarObj is None:
+            dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar'}
         puckLocs = dewarObj["content"]
+        #[''*28]
         self.data = []
         self.dewarPos = None
         for i in range(len(puckLocs)):
             if puckLocs[i] != "":
-                owner = db_lib.getContainerByID(puckLocs[i])["owner"]
-                self.data.append(db_lib.getContainerNameByID(puckLocs[i]))
+                puck_name = puckLocs[i]['name']
+                #owner = db_lib.getContainerByID(puckLocs[i])["owner"]
+                self.data.append(puck_name)
             else:
                 self.data.append("Empty")
-        logger.info(self.data)
+        #logger.info(self.data)
 
     def initUI(self):
         layout = QtWidgets.QVBoxLayout()
@@ -68,7 +73,7 @@ class DewarDialog(QtWidgets.QDialog):
     def on_button(self, n):
         if self.action == "remove":
             self.dewarPos = n
-            db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
+            #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
             self.allButtonList[int(n)].setText("Empty")
             self.parent.treeChanged_pv.put(1)
         else:
@@ -79,8 +84,8 @@ class DewarDialog(QtWidgets.QDialog):
         self.dewarPos = 0
         self.reject()
 
-    @staticmethod
-    def getDewarPos(parent=None, action="add"):
-        dialog = DewarDialog(parent, action)
-        result = dialog.exec_()
-        return (dialog.dewarPos, result == QtWidgets.QDialog.Accepted)
+    #@staticmethod
+    #def getDewarPos(parent=None, action="add"):
+    #    dialog = DewarDialog(parent, action)
+    #    result = dialog.exec_()
+    #    return (dialog.dewarPos, result == QtWidgets.QDialog.Accepted)

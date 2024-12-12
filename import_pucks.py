@@ -16,6 +16,7 @@ import yaml
 from qtpy import QtWidgets
 from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QColor, QIcon
+from gui.dialog.dewar import DewarDialog
 
 from gui.config import ConfigurationWindow
 from gui.custom_table import DewarTableWithCopy, TableWithCopy
@@ -179,6 +180,8 @@ class ControlMain(QtWidgets.QMainWindow):
                 self.model._dataframe.to_excel(filepath, engine=engine, index=False)
 
     def openDewar(self):
+        self.sub = DewarDialog(self)
+        self.sub.show()  
         return
 
     def identify_excel_format(self, file_path):
@@ -324,7 +327,9 @@ class ControlMain(QtWidgets.QMainWindow):
                     break
                 # Check if puck exists, otherwise create one
                 if row["puckname"] != prevPuckName:
-                    self.all_pucks.append(puck_id)
+                    if puck_id is not None:
+                        puck_id['proposal_number'] = propNum
+                        self.all_pucks.append(puck_id)
                     puck_id = dbConnection.getOrCreateContainerID(
                         row["puckname"], 16, "16_pin_puck"
                     )
@@ -350,6 +355,7 @@ class ControlMain(QtWidgets.QMainWindow):
                 #dbConnection.insertIntoContainer(
                 #    puck_id, int(row["position"]) - 1, sampleID
                 #)
+            puck_id['proposal_number'] = propNum
             self.all_pucks.append(puck_id)
             print(self.all_pucks)
             dbConnection.sendToRedis('allpuckData', str(self.all_pucks))

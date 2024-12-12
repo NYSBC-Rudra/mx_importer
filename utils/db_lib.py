@@ -24,7 +24,7 @@ class DBConnection:
         # self.configuration_ref = ccc.ConfigurationReference(
         #     **services_config["conftrak"]
         # )
-        self.client = redis.Redis(host="10.67.147.227", port=3900, db=0)
+        self.client = redis.Redis(host="10.67.147.227", port=3900, db=0, decode_responses=True)
         self.beamline_id = beamline_id
         if owner is not None:
             self.owner = getpass.getuser()
@@ -161,3 +161,9 @@ class DBConnection:
             return True
         except Exception as e:
             return False
+        
+    def getFromRedis(self, key):
+        try:
+            return self.client.get(key)
+        except Exception as e:
+            return None
