@@ -153,3 +153,11 @@ class DBConnection:
         #)
         sampledict = {'name':sample_name, 'kind':kind, 'proposalID':proposalID, 'puck_name':container}
         return sampledict
+    
+
+    def sendToRedis(self, key, value):
+        try:
+            self.client.set(key,value)
+            return True
+        except Exception as e:
+            return False
