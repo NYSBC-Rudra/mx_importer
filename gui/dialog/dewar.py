@@ -119,7 +119,7 @@ class DewarDialog(QtWidgets.QDialog):
 
     def removePuckFromDewar(self, position):
         dewarObj = self.connection.getFromRedis('NyxDewar')
-        eval(dewarObj)
+        dewarObj = eval(dewarObj)
         puckname = dewarObj['content'][position]['name']
         dewarObj['content'][position] = ''
         dewarObj['pucks'].remove(puckname)
