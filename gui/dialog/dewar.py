@@ -87,6 +87,7 @@ class DewarDialog(QtWidgets.QDialog):
             #print(self.parent.all_pucks)
             #self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
             chosen_puck = PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))[0]
+            print(int(self.dewarPos))
             self.fillContainerPosition(int(self.dewarPos), chosen_puck)
 
         else:
