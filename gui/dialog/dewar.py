@@ -21,6 +21,7 @@ class DewarDialog(QtWidgets.QDialog):
 
     def initData(self):
         dewarObj = self.connection.getFromRedis('NyxDewar')
+        print(dewarObj)
         if dewarObj == '':
             dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar', 'pucks':[]}
             dewarObj = str(dewarObj)
@@ -30,7 +31,7 @@ class DewarDialog(QtWidgets.QDialog):
         self.data = []
         self.dewarPos = None
         #max 29 values in dewar object
-        for i in range(0,29):
+        for i in range(len(puckLocs)):
             if puckLocs[i] != "":
                 puck_name = puckLocs[i]['name']
                 #owner = db_lib.getContainerByID(puckLocs[i])["owner"]
