@@ -21,6 +21,7 @@ class PuckDialog(QtWidgets.QDialog):
         puckList = sorted(puckListUnsorted, key=lambda i: i["name"], reverse=False)
         dewarObj = self.redis_connection.getFromRedis('NyxDewar')
         dewarObj = eval(dewarObj)
+        print(dewarObj)
         pucksInDewar = set(dewarObj["pucks"])
         self.model = QtGui.QStandardItemModel(self)
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
