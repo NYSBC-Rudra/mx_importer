@@ -10,6 +10,7 @@ from utils.db_lib import DBConnection
 class PuckDialog(QtWidgets.QDialog):
     def __init__(self, parent):
         super(PuckDialog, self).__init__(parent)
+        print(self.all_pucks)
         self.initData()
         self.initUI()
 
