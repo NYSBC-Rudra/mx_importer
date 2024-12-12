@@ -86,7 +86,7 @@ class DewarDialog(QtWidgets.QDialog):
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
             #print(self.parent.all_pucks)
             #self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
-            chosen_puck = self.PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))
+            chosen_puck = PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))
             print(chosen_puck)
 
         else:
