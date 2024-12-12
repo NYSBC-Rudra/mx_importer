@@ -9,8 +9,8 @@ from utils.db_lib import DBConnection
 class DewarDialog(QtWidgets.QDialog):
     def __init__(self, parent: "ControlMain"):
         super(DewarDialog, self).__init__(parent)
-        self.pucksPerDewarSector = 7
-        self.dewarSectors = 4
+        self.pucksPerDewarSector = 4
+        self.dewarSectors = 7
         #self.action = action
         self.action = "remove"
         self.parent = parent
@@ -47,6 +47,9 @@ class DewarDialog(QtWidgets.QDialog):
         cLabel = QtWidgets.QLabel("C")
         cLabel.setFixedWidth(10)
         headerLabelLayout.addWidget(cLabel)
+        dLabel = QtWidgets.QLabel("D")
+        dLabel.setFixedWidth(15)
+        headerLabelLayout.addWidget(dLabel)
         layout.addLayout(headerLabelLayout)
         self.allButtonList = [None] * (self.dewarSectors * self.pucksPerDewarSector)
         for i in range(0, self.dewarSectors):
