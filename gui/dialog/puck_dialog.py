@@ -1,4 +1,3 @@
-import logging
 import typing
 
 from qtpy import QtCore, QtGui, QtWidgets
@@ -6,14 +5,10 @@ from qtpy.QtCore import Qt
 
 from utils.db_lib import DBConnection
 
-if typing.TYPE_CHECKING:
-    from lsdcGui import ControlMain
-
-logger = logging.getLogger()
 
 
 class PuckDialog(QtWidgets.QDialog):
-    def __init__(self, parent: "ControlMain"):
+    def __init__(self, parent):
         super(PuckDialog, self).__init__(parent)
         self.initData()
         self.initUI()

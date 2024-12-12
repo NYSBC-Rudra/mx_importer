@@ -3,6 +3,7 @@ import typing
 
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
+from gui.dialog.puck_dialog import PuckDialog
 
 
 
@@ -73,13 +74,17 @@ class DewarDialog(QtWidgets.QDialog):
         self.setLayout(layout)
 
     def on_button(self, n):
-        if self.action == "remove":
+        print(n)
+        print(self.allButtonList[int(n)].text())
+        if 'Empty' in self.allButtonList[int(n)].text():
             self.dewarPos = n
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
-            self.allButtonList[int(n)].setText("Empty")
-            self.parent.treeChanged_pv.put(1)
+            self.puck_window = PuckDialog(self)
+            self.puck_window.show() 
+
         else:
             self.dewarPos = n
+            self.allButtonList[int(n)].setText("Empty")
             self.accept()
 
     def containerCancelCB(self):
