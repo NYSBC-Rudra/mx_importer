@@ -86,7 +86,6 @@ class DewarDialog(QtWidgets.QDialog):
         else:
             self.dewarPos = n
             self.allButtonList[int(n)].setText("Empty")
-            self.accept()
 
     def containerCancelCB(self):
         self.dewarPos = 0
