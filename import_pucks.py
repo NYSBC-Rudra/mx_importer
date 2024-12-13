@@ -298,9 +298,9 @@ class ControlMain(QtWidgets.QMainWindow):
             beamline_id = self.config.get("beamline", "99id1").lower()
             dbConnection = DBConnection(
                 beamline_id=beamline_id,
-                host=self.config.get(
-                    "database_host", os.environ.get("MONGODB_HOST", "localhost")
-                ),
+                #host=self.config.get(
+                #    "database_host", os.environ.get("MONGODB_HOST", "localhost")
+                #),
                 owner=self.owner,
             )
             self.progress_dialog = QtWidgets.QProgressDialog(
