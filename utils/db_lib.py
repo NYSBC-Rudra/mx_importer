@@ -26,6 +26,7 @@ class DBConnection:
         # self.configuration_ref = ccc.ConfigurationReference(
         #     **services_config["conftrak"]
         # )
+        print(redisport, redishost)
         self.client = redis.Redis(host=redishost, port=redisport, db=0, decode_responses=True)
         self.beamline_id = beamline_id
         if owner is not None:
