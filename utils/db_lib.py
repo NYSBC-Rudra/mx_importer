@@ -161,7 +161,7 @@ class DBConnection:
     def sendToRedis(self, key, value):
         try:
             self.client.set(key,value)
-            self.client.publish(key,value)
+            self.client.publish('{}:Pub'.format(key),value)
             return True
         except Exception as e:
             return False
