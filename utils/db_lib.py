@@ -8,6 +8,8 @@ class DBConnection:
     def __init__(self, beamline_id="nyx", host=None, owner=None):
         if not host:
             main_server = os.environ.get("MONGODB_HOST", "localhost")
+            redishost = os.environ.get("REDIS_HOST", "localhost")
+            redisport = os.environ.get("REDIS_PORT", "6379")
         else:
             main_server = host
 
@@ -24,7 +26,7 @@ class DBConnection:
         # self.configuration_ref = ccc.ConfigurationReference(
         #     **services_config["conftrak"]
         # )
-        self.client = redis.Redis(host="10.67.147.227", port=3900, db=0, decode_responses=True)
+        self.client = redis.Redis(host=redishost, port=redisport, db=0, decode_responses=True)
         self.beamline_id = beamline_id
         if owner is not None:
             self.owner = getpass.getuser()
@@ -158,6 +160,7 @@ class DBConnection:
     def sendToRedis(self, key, value):
         try:
             self.client.set(key,value)
+            self.client.publish(key,value)
             return True
         except Exception as e:
             return False
