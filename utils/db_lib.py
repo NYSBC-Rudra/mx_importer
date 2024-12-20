@@ -3,6 +3,7 @@ from typing import Dict, Any
 import time
 import getpass
 import redis
+import json
 
 class DBConnection:
     def __init__(self, beamline_id="nyx", host=None, owner=None):
@@ -160,11 +161,28 @@ class DBConnection:
 
     def sendToRedis(self, key, value):
         try:
-            self.client.set(key,value)
-            self.client.publish('{}:Pub'.format(key),value)
+            message = json.dumps(value)
+            self.client.set(key,message)
+            self.publish_update('{}:Pub'.format(key),value)
             return True
         except Exception as e:
             return False
+        
+    def publish_update(self, key, value):
+        """
+        Publishes data to the given Redis channel.
+
+        Args:
+            data (Union[dict, BaseModel]): The data to publish. Can be a dictionary or a Pydantic model.
+            channel (str): The Redis channel to publish the data to. Default is "albula_monitor".
+        """
+        try:
+            message = json.dumps(value)
+            self.redis_client.publish(key, message)
+            print(f"Published update to '{key}': {message}")
+        except Exception as e:
+            print(f"Failed to publish update: {e}")
+
         
     def getFromRedis(self, key):
         try:
