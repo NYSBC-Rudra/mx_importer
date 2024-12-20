@@ -4,7 +4,7 @@ import typing
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
 from gui.dialog.puck_dialog import PuckDialog
-
+import json
 
 
 class DewarDialog(QtWidgets.QDialog):
@@ -27,7 +27,7 @@ class DewarDialog(QtWidgets.QDialog):
             dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar', 'pucks':[]}
             dewarObj = str(dewarObj)
             self.connection.sendToRedis('NyxDewar',dewarObj)
-        dewarObj = eval(dewarObj)
+        dewarObj = json.loads(dewarObj)
         puckLocs = dewarObj["content"]
         #[''*28]
         self.data = []
@@ -107,7 +107,7 @@ class DewarDialog(QtWidgets.QDialog):
             return
         puck = possible_pucks[0]
         dewarObj = self.connection.getFromRedis('NyxDewar')
-        dewarObj = eval(dewarObj)
+        dewarObj = json.loads(dewarObj)
         #print(dewarObj['content'])
         dewarObj['content'][int(position)] = puck
         dewarObj['pucks'].append(puckName)
@@ -119,7 +119,7 @@ class DewarDialog(QtWidgets.QDialog):
 
     def removePuckFromDewar(self, position):
         dewarObj = self.connection.getFromRedis('NyxDewar')
-        dewarObj = eval(dewarObj)
+        dewarObj = json.loads(dewarObj)
         puckname = dewarObj['content'][position]['name']
         dewarObj['content'][position] = ''
         dewarObj['pucks'].remove(puckname)

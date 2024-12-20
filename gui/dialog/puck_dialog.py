@@ -5,6 +5,7 @@ from qtpy.QtCore import Qt
 
 from utils.db_lib import DBConnection
 
+import json
 
 
 class PuckDialog(QtWidgets.QDialog):
@@ -24,7 +25,7 @@ class PuckDialog(QtWidgets.QDialog):
         puckListUnsorted = self.all_pucks
         puckList = sorted(puckListUnsorted, key=lambda i: i["name"], reverse=False)
         dewarObj = self.redis_connection.getFromRedis('NyxDewar')
-        dewarObj = eval(dewarObj)
+        dewarObj = json.loads(dewarObj)
         print(dewarObj)
         pucksInDewar = set(dewarObj["pucks"])
         self.model = QtGui.QStandardItemModel(self)
