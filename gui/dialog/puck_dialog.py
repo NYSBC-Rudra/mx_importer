@@ -25,7 +25,7 @@ class PuckDialog(QtWidgets.QDialog):
         puckListUnsorted = self.all_pucks
         puckList = sorted(puckListUnsorted, key=lambda i: i["name"], reverse=False)
         dewarObj = self.redis_connection.getFromRedis('NyxDewar')
-        dewarObj = eval(dewarObj)
+        dewarObj = json.loads(dewarObj)
         #dewarObj = json.loads(dewarObj)
         print(dewarObj)
         pucksInDewar = set(dewarObj["pucks"])
