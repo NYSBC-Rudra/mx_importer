@@ -178,7 +178,7 @@ class DBConnection:
         """
         try:
             message = json.dumps(value)
-            self.redis_client.publish(key, message)
+            self.client.publish(key, message)
             print(f"Published update to '{key}': {message}")
         except Exception as e:
             print(f"Failed to publish update: {e}")
