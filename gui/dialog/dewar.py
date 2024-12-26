@@ -25,7 +25,6 @@ class DewarDialog(QtWidgets.QDialog):
         #making dewar object if not present
         if dewarObj == '':
             dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar', 'pucks':[]}
-            dewarObj = str(dewarObj)
             self.connection.sendToRedis('NyxDewar',dewarObj)
         dewarObj = json.loads(dewarObj)
         puckLocs = dewarObj["content"]
@@ -112,7 +111,7 @@ class DewarDialog(QtWidgets.QDialog):
         dewarObj['content'][int(position)] = puck
         dewarObj['pucks'].append(puckName)
         #print('sending dewar to redis \n {}'.format(dewarObj))
-        self.connection.sendToRedis('NyxDewar',str(dewarObj))
+        self.connection.sendToRedis('NyxDewar',dewarObj)
         self.allButtonList[position].setText(puckName)
 
 
@@ -123,7 +122,7 @@ class DewarDialog(QtWidgets.QDialog):
         puckname = dewarObj['content'][position]['name']
         dewarObj['content'][position] = ''
         dewarObj['pucks'].remove(puckname)
-        self.connection.sendToRedis('NyxDewar',str(dewarObj))
+        self.connection.sendToRedis('NyxDewar',dewarObj)
         return
 
 

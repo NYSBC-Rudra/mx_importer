@@ -358,7 +358,7 @@ class ControlMain(QtWidgets.QMainWindow):
             puck_id['proposal_number'] = propNum
             self.all_pucks.append(puck_id)
             #print(self.all_pucks)
-            dbConnection.sendToRedis('allpuckData', str(self.all_pucks))
+            dbConnection.sendToRedis('allpuckData', self.all_pucks)
         else:
             self.showModalMessage("Error", "Invalid data, will not upload to database")
 
