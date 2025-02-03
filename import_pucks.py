@@ -16,6 +16,7 @@ import yaml
 from qtpy import QtWidgets
 from qtpy.QtCore import QSize, Qt
 from qtpy.QtGui import QColor, QIcon
+from gui.dialog.dewar import DewarDialog
 
 from gui.config import ConfigurationWindow
 from gui.custom_table import DewarTableWithCopy, TableWithCopy
@@ -62,6 +63,7 @@ class ControlMain(QtWidgets.QMainWindow):
         self.status_bar.addPermanentWidget(self.mode_status)
         # Default mode to start the application
         self._set_mode(Mode.MANUAL)
+        self.all_pucks = []
 
     def validatePuckLists(self):
         pucklist_path = Path(self.config["list_path"])
@@ -112,6 +114,8 @@ class ControlMain(QtWidgets.QMainWindow):
         self.saveExcelAction.triggered.connect(self.saveExcel)
         self.exitAction = QtWidgets.QAction("&Exit", self)
         self.exitAction.triggered.connect(QtWidgets.QApplication.quit)
+        self.FillDewarAction = QtWidgets.QAction("&Fill Dewar", self)
+        self.FillDewarAction.triggered.connect(self.openDewar)
 
         # Puck menu actions
         self.importExcelAction = QtWidgets.QAction("&Import Excel file", self)
@@ -174,6 +178,11 @@ class ControlMain(QtWidgets.QMainWindow):
 
             if self.model:
                 self.model._dataframe.to_excel(filepath, engine=engine, index=False)
+
+    def openDewar(self):
+        self.sub = DewarDialog(self)
+        self.sub.show()  
+        return
 
     def identify_excel_format(self, file_path):
         with open(file_path, "rb") as f:
@@ -318,6 +327,9 @@ class ControlMain(QtWidgets.QMainWindow):
                     break
                 # Check if puck exists, otherwise create one
                 if row["puckname"] != prevPuckName:
+                    if puck_id is not None:
+                        puck_id['proposal_number'] = propNum
+                        self.all_pucks.append(puck_id)
                     puck_id = dbConnection.getOrCreateContainerID(
                         row["puckname"], 16, "16_pin_puck"
                     )
@@ -334,14 +346,19 @@ class ControlMain(QtWidgets.QMainWindow):
                     model=None if pd.isna(model) else str(model),
                     sequence=None if pd.isna(seq) else str(seq),
                     proposalID=propNum,
-                    container=puck_id,
+                    container=puck_id['name'],
                 )
-                if puck_id not in self.currentPucks:
-                    dbConnection.emptyContainer(puck_id)
-                    self.currentPucks.add(puck_id)
-                dbConnection.insertIntoContainer(
-                    puck_id, int(row["position"]) - 1, sampleID
-                )
+                if puck_id['name'] not in self.currentPucks:
+                    #dbConnection.emptyContainer(puck_id)
+                    self.currentPucks.add(puck_id['name'])
+                puck_id[int(row["position"]) - 1] = sampleID
+                #dbConnection.insertIntoContainer(
+                #    puck_id, int(row["position"]) - 1, sampleID
+                #)
+            puck_id['proposal_number'] = propNum
+            self.all_pucks.append(puck_id)
+            print(self.all_pucks)
+            dbConnection.sendToRedis('allpuckData', str(self.all_pucks))
         else:
             self.showModalMessage("Error", "Invalid data, will not upload to database")
 
@@ -353,7 +370,7 @@ class ControlMain(QtWidgets.QMainWindow):
         dewarScanMenu = QtWidgets.QMenu("&Shipping Dewar", self)
         menuBar.addMenu(fileMenu)
         menuBar.addMenu(dataMenu)
-        fileMenu.addActions([self.saveExcelAction, self.exitAction])
+        fileMenu.addActions([self.saveExcelAction, self.FillDewarAction, self.exitAction])
 
         dataMenu.addActions(
             [
