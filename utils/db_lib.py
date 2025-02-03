@@ -3,11 +3,16 @@ from typing import Dict, Any
 import time
 import getpass
 import redis
+import json
+
+
 
 class DBConnection:
     def __init__(self, beamline_id="nyx", host=None, owner=None):
         if not host:
             main_server = os.environ.get("MONGODB_HOST", "localhost")
+            self.redishost = os.environ.get("REDIS_HOST", "localhost")
+            self.redisport = os.environ.get("REDIS_PORT", "6379")
         else:
             main_server = host
 
@@ -24,7 +29,8 @@ class DBConnection:
         # self.configuration_ref = ccc.ConfigurationReference(
         #     **services_config["conftrak"]
         # )
-        self.client = redis.Redis(host="10.67.147.227", port=3900, db=0, decode_responses=True)
+        print(self.redisport, self.redishost)
+        self.client = redis.Redis(host=self.redishost, port=self.redisport, db=1, decode_responses=True)
         self.beamline_id = beamline_id
         if owner is not None:
             self.owner = getpass.getuser()
@@ -157,10 +163,28 @@ class DBConnection:
 
     def sendToRedis(self, key, value):
         try:
-            self.client.set(key,value)
+            message = json.dumps(value)
+            self.client.set(key,message)
+            self.publish_update('{}:Pub'.format(key),value)
             return True
         except Exception as e:
             return False
+        
+    def publish_update(self, key, value):
+        """
+        Publishes data to the given Redis channel.
+
+        Args:
+            data (Union[dict, BaseModel]): The data to publish. Can be a dictionary or a Pydantic model.
+            channel (str): The Redis channel to publish the data to. Default is "albula_monitor".
+        """
+        try:
+            message = json.dumps(value)
+            self.client.publish(key, message)
+            print(f"Published update to '{key}': {message}")
+        except Exception as e:
+            print(f"Failed to publish update: {e}")
+
         
     def getFromRedis(self, key):
         try:

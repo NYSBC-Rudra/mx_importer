@@ -3,7 +3,8 @@ import typing
 
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
-
+from gui.dialog.puck_dialog import PuckDialog
+import json
 
 
 class DewarDialog(QtWidgets.QDialog):
@@ -20,12 +21,19 @@ class DewarDialog(QtWidgets.QDialog):
 
     def initData(self):
         dewarObj = self.connection.getFromRedis('NyxDewar')
-        if dewarObj is None:
-            dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar'}
+
+        #print(dewarObj)
+        #making dewar object if not present
+        if dewarObj == '' or dewarObj == None:
+            dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar', 'pucks':[]}
+            self.connection.sendToRedis('NyxDewar',dewarObj)
+            dewarObj = self.connection.getFromRedis('NyxDewar')
+        dewarObj = json.loads(dewarObj)
         puckLocs = dewarObj["content"]
         #[''*28]
         self.data = []
         self.dewarPos = None
+        #max 29 values in dewar object
         for i in range(len(puckLocs)):
             if puckLocs[i] != "":
                 puck_name = puckLocs[i]['name']
@@ -73,18 +81,54 @@ class DewarDialog(QtWidgets.QDialog):
         self.setLayout(layout)
 
     def on_button(self, n):
-        if self.action == "remove":
+        
+        if 'Empty' in self.allButtonList[int(n)].text():
             self.dewarPos = n
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
-            self.allButtonList[int(n)].setText("Empty")
-            self.parent.treeChanged_pv.put(1)
+            #print(self.parent.all_pucks)
+            #self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
+            chosen_puck = PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))[0]
+            self.fillContainerPosition(int(self.dewarPos), chosen_puck)
+
         else:
             self.dewarPos = n
-            self.accept()
+            self.removePuckFromDewar(int(self.dewarPos))
+            self.allButtonList[int(n)].setText("Empty")
+
 
     def containerCancelCB(self):
         self.dewarPos = 0
         self.reject()
+
+    def fillContainerPosition(self, position, puckName):
+        #finding correct puck from all pucks
+        possible_pucks = [puck for puck in self.parent.all_pucks if puck["name"] == puckName]
+        if len(possible_pucks) == 0 or len(possible_pucks) > 1:
+            QtWidgets.QMessageBox.warning(self, "Error", "{} of {} found in list".format(len(possible_pucks), puckName))
+            return
+        puck = possible_pucks[0]
+        dewarObj = self.connection.getFromRedis('NyxDewar')
+        dewarObj = json.loads(dewarObj)
+        #print(dewarObj['content'])
+        dewarObj['content'][int(position)] = puck
+        dewarObj['pucks'].append(puckName)
+        #print('sending dewar to redis \n {}'.format(dewarObj))
+        self.connection.sendToRedis('NyxDewar',dewarObj)
+        self.allButtonList[position].setText(puckName)
+
+
+
+    def removePuckFromDewar(self, position):
+        dewarObj = self.connection.getFromRedis('NyxDewar')
+        dewarObj = json.loads(dewarObj)
+        puckname = dewarObj['content'][position]['name']
+        dewarObj['content'][position] = ''
+        dewarObj['pucks'].remove(puckname)
+        self.connection.sendToRedis('NyxDewar',dewarObj)
+        return
+
+
+
 
     #@staticmethod
     #def getDewarPos(parent=None, action="add"):

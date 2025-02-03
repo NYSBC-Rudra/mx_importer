@@ -298,9 +298,9 @@ class ControlMain(QtWidgets.QMainWindow):
             beamline_id = self.config.get("beamline", "99id1").lower()
             dbConnection = DBConnection(
                 beamline_id=beamline_id,
-                host=self.config.get(
-                    "database_host", os.environ.get("MONGODB_HOST", "localhost")
-                ),
+                #host=self.config.get(
+                #    "database_host", os.environ.get("MONGODB_HOST", "localhost")
+                #),
                 owner=self.owner,
             )
             self.progress_dialog = QtWidgets.QProgressDialog(
@@ -357,8 +357,8 @@ class ControlMain(QtWidgets.QMainWindow):
                 #)
             puck_id['proposal_number'] = propNum
             self.all_pucks.append(puck_id)
-            print(self.all_pucks)
-            dbConnection.sendToRedis('allpuckData', str(self.all_pucks))
+            #print(self.all_pucks)
+            dbConnection.sendToRedis('allpuckData', self.all_pucks)
         else:
             self.showModalMessage("Error", "Invalid data, will not upload to database")
 

@@ -1,4 +1,3 @@
-import logging
 import typing
 
 from qtpy import QtCore, QtGui, QtWidgets
@@ -6,35 +5,42 @@ from qtpy.QtCore import Qt
 
 from utils.db_lib import DBConnection
 
-if typing.TYPE_CHECKING:
-    from lsdcGui import ControlMain
-
-logger = logging.getLogger()
+import json
 
 
 class PuckDialog(QtWidgets.QDialog):
-    def __init__(self, parent: "ControlMain"):
+    def __init__(self, parent, pucklist, container_position=0 ):
         super(PuckDialog, self).__init__(parent)
+        self.parent = parent
+        self.all_pucks = pucklist
+        self.position = container_position
+        print("in puck_dialog, position= {}".format(self.position))
+        print("in puck_dialog, all pucks importing = {}".format(self.all_pucks))
+        self.redis_connection = DBConnection()
+        our_button = self.parent.allButtonList[int(self.position)]
         self.initData()
         self.initUI()
 
     def initData(self):
-        puckListUnsorted = db_lib.getAllPucks(daq_utils.owner)
+        puckListUnsorted = self.all_pucks
         puckList = sorted(puckListUnsorted, key=lambda i: i["name"], reverse=False)
-        dewarObj = db_lib.getPrimaryDewar(daq_utils.beamline)
-        pucksInDewar = set(dewarObj["content"])
+        dewarObj = self.redis_connection.getFromRedis('NyxDewar')
+        dewarObj = json.loads(dewarObj)
+        #dewarObj = json.loads(dewarObj)
+        print(dewarObj)
+        pucksInDewar = set(dewarObj["pucks"])
         self.model = QtGui.QStandardItemModel(self)
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
         labels = ["Name"]
         self.model.setHorizontalHeaderLabels(labels)
         self.puckName = None
         for puck in puckList:
-            if puck["uid"] not in pucksInDewar:
+            if puck["name"] not in pucksInDewar:
                 item = QtGui.QStandardItem(puck["name"])
                 # Adding meta data to the puck. Each piece of meta data is identified using
                 # an int value, in this case is Qt.UserRole for puck modified time. This metadata is used
                 # to sort pucks
-                item.setData(puck.get("modified_time", 0), Qt.UserRole)
+                #item.setData(puck.get("modified_time", 0), Qt.UserRole)
                 self.model.appendRow(item)
 
     def initUI(self):
@@ -86,7 +92,7 @@ class PuckDialog(QtWidgets.QDialog):
         self.puckName = text
 
     @staticmethod
-    def getPuckName(parent=None):
-        dialog = PuckDialog(parent)
+    def getPuckName(parent=None, pucklist=[], container_position=0 ):
+        dialog = PuckDialog(parent,pucklist, container_position=0 )
         result = dialog.exec_()
         return (dialog.puckName, result == QtWidgets.QDialog.Accepted)
