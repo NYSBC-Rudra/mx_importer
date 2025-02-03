@@ -5,6 +5,8 @@ import getpass
 import redis
 import json
 
+
+
 class DBConnection:
     def __init__(self, beamline_id="nyx", host=None, owner=None):
         if not host:
@@ -28,7 +30,7 @@ class DBConnection:
         #     **services_config["conftrak"]
         # )
         print(self.redisport, self.redishost)
-        self.client = redis.Redis(host=self.redishost, port=self.redisport, db=0, decode_responses=True)
+        self.client = redis.Redis(host=self.redishost, port=self.redisport, db=1, decode_responses=True)
         self.beamline_id = beamline_id
         if owner is not None:
             self.owner = getpass.getuser()

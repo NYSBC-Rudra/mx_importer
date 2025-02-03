@@ -8,6 +8,17 @@ import traceback
 
 
 def init_argparse() -> argparse.ArgumentParser:
+    """
+    Initialize the argument parser for the puck monitor service.
+
+    The function creates an argument parser that takes in two arguments:
+        -v, --version: prints the version of the script and exits.
+        -config: a yaml file containing the configuration for the puck monitor service.
+
+    Returns:
+        An instance of argparse.ArgumentParser.
+    """
+    #hello
     parser = argparse.ArgumentParser(
         usage="%(prog)s [OPTION] [FILE]...",
         description="Start the puck monitor service",
