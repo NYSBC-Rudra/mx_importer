@@ -24,7 +24,7 @@ from utils.db_lib import DBConnection
 from utils.pandas_model import DewarPandasModel, PuckPandasModel
 
 logger = logging.getLogger(__name__)
-logfile_path = Path("~/.puckimporter/puckimporter.log").expanduser()
+logfile_path = Path("./puckimporter.log").expanduser()
 logfile_path.parent.mkdir(parents=True, exist_ok=True)
 file_handler = logging.FileHandler(logfile_path)
 file_handler.setLevel(logging.INFO)
@@ -209,21 +209,23 @@ class ControlMain(QtWidgets.QMainWindow):
             "puckname",
             "position",
             "samplename",
-            "model",
-            "sequence",
             "proposalnum",
         ]
         if filename:
             engine = self.identify_excel_format(filename)
             excel_file = pd.ExcelFile(filename, engine=engine)
             for sheet_name in excel_file.sheet_names:
+
                 data = excel_file.parse(sheet_name)
+                
                 if data.empty:
+                    print('no sheet')
                     continue
                 # Check if any row besides header row contains "puckname"
-                rows = (data.applymap(lambda x: str(x).lower() == "puckname")).any(
+                rows = (data.map(lambda x: str(x).lower() == required_columns_list[0])).any(
                     axis=1
                 )
+                print(data)
 
                 required_columns = set(required_columns_list)
                 header_correct = required_columns.issubset(
@@ -233,6 +235,7 @@ class ControlMain(QtWidgets.QMainWindow):
                         if isinstance(col, str)
                     )
                 )
+                print("header_correct {}".format(header_correct))
                 if not rows.all() and not header_correct:
                     import_offset = data.loc[rows].first_valid_index()
                     if isinstance(import_offset, (int, np.integer)):
@@ -264,6 +267,7 @@ class ControlMain(QtWidgets.QMainWindow):
             self.tableView.resizeColumnsToContents()
 
     def validateExcel(self):
+        
         if not isinstance(self.model, PuckPandasModel):
             return
         try:
