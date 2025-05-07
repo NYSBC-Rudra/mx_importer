@@ -1,3 +1,5 @@
+import pdb
+
 import json
 import re
 import typing
@@ -8,6 +10,8 @@ import pandas as pd
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, Qt
 from qtpy.QtGui import QColor
 from qtpy.QtWidgets import QTableView
+
+from utils.collection_request import CollectionRequest
 
 
 class BasePandasModel(QAbstractTableModel):
@@ -100,6 +104,14 @@ class BasePandasModel(QAbstractTableModel):
     ) -> None:
         for idx in row_indices:
             self.changeColor(idx, column_index, color)
+    
+    def _changeCellData(self, column_index: int, row_indices, value=None) -> None:
+        for idx in row_indices:
+            self.changeValue(idx, column_index, value)
+    
+    def changeValue(self, row: int, column: int, value) -> None:
+        #self._dataframe.at[row, column] = self._dataframe.at[row, column].astype("object")
+        self._dataframe.at[row,column] = value
 
 
 class PuckPandasModel(BasePandasModel):
@@ -121,6 +133,10 @@ class PuckPandasModel(BasePandasModel):
             raise TypeError(
                 "Pucks submitted do not match master list. Pucks not in whitelist or etched list are in yellow. Pucks in blacklist are in red"
             )
+        '''
+        sample information checkers
+        
+        '''
 
         if not self._checkSampleNames(self._dataframe):
             raise TypeError(
@@ -142,21 +158,60 @@ class PuckPandasModel(BasePandasModel):
 
         if not self._checkDuplicatePuckPos(self._dataframe):
             raise TypeError("Duplicate Puck name and position combinations found")
-        self.validData = True
+        
 
+
+        
+
+
+        
+        '''
+        data collection checkers
+        '''
+        if not self._deltaphi_exposure_toltalphi_check(self._dataframe):
+            raise TypeError(
+                "Data collection parameters are invalid, missing values may have been replaced, check the cells highlighted in red and yellow"
+            )
+        
+            
+
+        '''
+        automation checkers
+        '''
+
+
+        '''
+        data processing checkers
+        '''
+        # if not error_check:
+        #     raise TypeError(error_string)
+
+        self.validData = True
     def preprocessData(self) -> None:
         # Note all column names are lowercase, good for comparison
+        #IN NYX IMPORTER ADDING ALL THE COLUMNS THAT ARE REQUIRED
         required_columns_list = [
             "puckname",
             "position",
             "samplename",
-            "model",
-            "sequence",
             "proposalnum",
-        ]
+            "folder",
+            "deltaphi",
+            "exposure",
+            "totalphi",
+            "transmission",
+            "targetresolution",
+            "beamsize",
+            "priority",
+            "collectiontype",
+            "model",
+            "spacegroup",
+            "cellparameters",
+]
         required_columns = set(required_columns_list)
         self._dataframe.columns = self._dataframe.columns.str.lower()
         columns_absent = None
+        self.resetColors()
 
         # Change current dataframe to only have required columns
         if not required_columns.issubset(self._dataframe.columns):
@@ -167,14 +222,41 @@ class PuckPandasModel(BasePandasModel):
                 self._dataframe.loc[:, col] = ""
 
         # Set data types for various columns. By this point all required columns should be present
-        self._dataframe.loc[:, "position"] = pd.to_numeric(
-            self._dataframe["position"], errors="coerce"
-        ).astype("Int64")
-        self._dataframe.loc[:, "proposalnum"] = pd.to_numeric(
-            self._dataframe["proposalnum"], errors="coerce"
-        ).astype("Int64")
+        '''
+        Setting sample information variables
+        '''
+        self._dataframe.loc[:, "position"].astype("Int64", errors="ignore")
 
-        self._dataframe = self._dataframe.astype({"sequence": "str", "model": "str"})
+        self._dataframe.loc[:, "proposalnum"].astype("Int64", errors="ignore")
+
+
+
+        '''
+        setting data collection variables
+        '''
+        self._dataframe.loc[:, "deltaphi"].astype("float" , errors="ignore")
+        self._dataframe.loc[:, "exposure"].astype("float" , errors="ignore")
+        self._dataframe.loc[:, "totalphi"].astype("float" , errors="ignore")
+        self._dataframe.loc[:, "transmission"].astype("float" , errors="ignore")
+        #self._dataframe.loc[:, "beamsize"] = pd.to_numeric(
+        #    self._dataframe["beamsize"], errors="coerce"
+        #).astype("float")
+        self._dataframe.loc[:, "targetresolution"].astype("float" , errors="ignore")
+        self._dataframe.loc[:, "beamsize"].astype("float" , errors="ignore")
+
+
+        '''
+        setting automation variables
+        '''
+        self._dataframe = self._dataframe.astype({"collectiontype": "str"} , errors="ignore")
+
+        '''
+        setting Data processing variables
+        '''
+
+        self._dataframe = self._dataframe.astype({"spacegroup": "str", "model": "str", "cellparameters": "str"} , errors="ignore")
+
+
         self._dataframe = self._dataframe[required_columns_list]
 
         # Remove all whitespaces from string columns
@@ -189,8 +271,24 @@ class PuckPandasModel(BasePandasModel):
             raise TypeError(
                 f"Missing column headers in excel file: {columns_absent}."
                 " If data is present in the excel file, make sure column names are correct and import the file again."
-                " Otherwise enter values into the empty column generated by the puck importer."
+                " Otherwise enter values into the empty column generated by the puck importer or validate the data again to fill some rows."
+                "You still need to validate this data before submitting"
             )
+        
+        '''
+        Filling empty values with defaults
+        '''
+
+        if not self._fill_data_collection_values(self._dataframe):
+            absent_columns = "transmission, targetresolution, beamsize, collectiontype, spacegroup, model, cellparameters"
+            raise TypeError(
+                f"Empty Values in following columns: {absent_columns}."
+                "Cells with added data have been highlighted in yellow."
+                "Please check the cells to see if the values are acceptable"
+                "You still need to validate this data before submitting"
+            )
+        
+
 
     def _checkProposalNumbers(self, data: pd.DataFrame) -> bool:
         proposalNumCol = "proposalnum"
@@ -238,6 +336,7 @@ class PuckPandasModel(BasePandasModel):
         duplicate_rows = data[
             data.duplicated(subset=["puckname", "position"], keep=False)
         ]
+
         if len(duplicate_rows):
             column_index = data.columns.get_loc("puckname")
             self._changeCellColors(column_index, duplicate_rows.index)
@@ -304,6 +403,41 @@ class PuckPandasModel(BasePandasModel):
         if missingPucks or disallowedPucks:
             return False
         return True
+
+    def _deltaphi_exposure_toltalphi_check(self, data: pd.DataFrame) -> bool:
+        columns = ['deltaphi', 'exposure', 'totalphi']
+        data.apply(self._create_collection_request, axis=1)
+            
+        
+        return True
+    
+    def _create_collection_request(self, row: pd.Series) -> CollectionRequest:
+        #get data from row
+        #print(row)
+        return
+
+        
+    def _fill_data_collection_values(self, data: pd.DataFrame) -> bool:
+        def checknan(value):
+            if isinstance(value, str):
+                return value == 'nan' or value == ''
+            return  pd.isna(value)
+
+        default_values = {'transmission': '20', 'targetresolution': '2.0', 'beamsize': '30', 
+                          'deltaphi': '0.25', 'exposure': '0.05', 'totalphi': '180', 'collectiontype':'centering',
+                          }
+        error_check = True
+
+        for column in default_values.keys():
+            empty_rows = (data[column].map(checknan))
+            if len(data[empty_rows]):
+                column_index = data.columns.get_loc(column)
+                #print('empty position in: {}, {}'.format(column_index, empty_rows.index))
+                value = default_values[column]
+                self._changeCellData(column, empty_rows.index,value)
+                self._changeCellColors(column_index, empty_rows.index, QColor(Qt.GlobalColor.yellow))
+                error_check = False
+        return error_check
 
 
 class DewarPandasModel(BasePandasModel):

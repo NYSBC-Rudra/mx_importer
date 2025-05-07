@@ -225,7 +225,6 @@ class ControlMain(QtWidgets.QMainWindow):
                 rows = (data.map(lambda x: str(x).lower() == required_columns_list[0])).any(
                     axis=1
                 )
-                print(data)
 
                 required_columns = set(required_columns_list)
                 header_correct = required_columns.issubset(
@@ -259,9 +258,11 @@ class ControlMain(QtWidgets.QMainWindow):
                     )
                 )
                 if header_correct:
+                    #HEADER IS CORRECT, PUCKS IMPORTED CORRECTLY, OFF TO VAlIDATING DATA
                     self.model = PuckPandasModel(data)
                     self.model.setPuckLists(self.pucklists)
                     self.validateExcel()
+                    #does does preprocess data and validates data
                     self.tableView.setModel(self.model)
                     break
             self.tableView.resizeColumnsToContents()
@@ -271,8 +272,11 @@ class ControlMain(QtWidgets.QMainWindow):
         if not isinstance(self.model, PuckPandasModel):
             return
         try:
+            #processing data from excel model
             self.model.preprocessData()
             self.model.validateData(self.config)
+            #TODO REMOVE THIS PRINT, PRINTING HERE FOR DEBUGGING PURPOSES
+            self.model._dataframe.to_excel("initial_data.xlsx", index=False)
             self.showModalMessage("Success", "Validated excel sucessfully")
 
         except TypeError as e:
