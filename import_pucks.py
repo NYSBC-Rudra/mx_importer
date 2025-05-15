@@ -64,6 +64,8 @@ class ControlMain(QtWidgets.QMainWindow):
         # Default mode to start the application
         self._set_mode(Mode.MANUAL)
         self.all_pucks = []
+        self.redis_pucklist = []
+        self.all_redis_pucks = {}
 
     def validatePuckLists(self):
         pucklist_path = Path(self.config["list_path"])
@@ -322,12 +324,17 @@ class ControlMain(QtWidgets.QMainWindow):
             self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
             prevPuckName = None
             puck_id = None
+            redis_puck = None
+            previous_redis_puck = None
+            self.all_redis_pucks = []
             self.currentPucks = set()
             self.progress_dialog.show()
             self.progress_dialog.setValue(0)
             time.sleep(
                 0.25
             )  # Dumb sleep because progress dialog doesn't initialize fast enough
+            self.current_puck = None
+            self.previous_puck = None
             for i, row in enumerate(self.model.rows()):
                 print(f"Processing row {i}")
                 self.progress_dialog.setValue(i + 1)
@@ -337,17 +344,54 @@ class ControlMain(QtWidgets.QMainWindow):
                 if row["puckname"] != prevPuckName:
                     if puck_id is not None:
                         puck_id['proposal_number'] = propNum
+                        redis_puck['proposal_number'] = propNum
                         self.all_pucks.append(puck_id)
+                        self.all_redis_pucks.append(redis_puck)
                     puck_id = dbConnection.getOrCreateContainerID(
                         row["puckname"], 16, "16_pin_puck"
                     )
+                    previous_redis_puck = redis_puck
+                    redis_puck = dbConnection.redisconnection.createPuck(name = row["puckname"], capacity=16)
                     prevPuckName = row["puckname"]
 
                 # Create sample
-                sampleName: str = row["samplename"]
-                model = row["model"]
-                seq = row["sequence"]
+                '''
+                get sample information fromt the row
+                and create sample info dictionary
+                '''
+                sample_info ={}
+
+                sampleName: str = str(row["samplename"])
+                sample_position: int = int(float(row["position"]))
                 propNum = row["proposalnum"]
+                seq = None
+                model = row.get('model', 'Nan')
+                folder = row.get('folder')
+                if pd.isna(folder):
+                    folder = f"{row['puckname']}_{sample_position:02.0f}"
+                sample_info = {
+                    "folder": folder,
+                    "deltaphi": row.get("deltaphi", 0.25),
+                    "exposure": row.get("exposure", 0.05),
+                    "totalphi": row.get("totalphi", 180),
+                    "transmission": row.get("transmission", 20),
+                    "targetresolution": row.get("targetresolution", 2.0),
+                    "beamsize": row.get("beamsize", 30),
+                    "priority": row.get("priority", 'Nan'),
+                    "collectiontype": row.get("collectiontype", 'centering'),
+                    "model": model,
+                    "spacegroup": row.get("spacegroup", 'Nan'),
+                    "cellparameters": row.get("cellparameters", 'Nan'),
+                    "proposal_number" : propNum,
+                }
+                
+
+
+
+
+
+
+
                 sampleID = dbConnection.createSample(
                     str(sampleName),
                     "pin",
@@ -356,19 +400,27 @@ class ControlMain(QtWidgets.QMainWindow):
                     proposalID=propNum,
                     container=puck_id['name'],
                 )
+                redis_sample = dbConnection.redisconnection.createSample(sample_name = sampleName, sample_data = sample_info)
                 if puck_id['name'] not in self.currentPucks:
                     #dbConnection.emptyContainer(puck_id)
                     self.currentPucks.add(puck_id['name'])
-                puck_id[int(row["position"]) - 1] = sampleID
+                redis_puck = dbConnection.redisconnection.addSampleTopuck(sample = redis_sample, puck = redis_puck, position = sample_position)
+                puck_id[sample_position - 1] = sampleID
                 #dbConnection.insertIntoContainer(
                 #    puck_id, int(row["position"]) - 1, sampleID
                 #)
             puck_id['proposal_number'] = propNum
+            redis_puck['proposal_number'] = propNum
             self.all_pucks.append(puck_id)
+            self.all_redis_pucks.append(redis_puck)
+            self.redis_pucklist = [x['name'] for x in self.all_redis_pucks]
+            #print(self.all_redis_pucks)
             #print(self.all_pucks)
-            dbConnection.sendToRedis('allpuckData', self.all_pucks)
+            #dbConnection.sendToRedis('allpuckData', self.all_pucks)
+            dbConnection.sendToRedis('redis_puck_data', self.all_redis_pucks)
         else:
             self.showModalMessage("Error", "Invalid data, will not upload to database")
+
 
     def _createMenuBar(self):
         menuBar = self.menuBar()

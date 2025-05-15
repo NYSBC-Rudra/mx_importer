@@ -243,6 +243,7 @@ class PuckPandasModel(BasePandasModel):
         #).astype("float")
         self._dataframe.loc[:, "targetresolution"].astype("float" , errors="ignore")
         self._dataframe.loc[:, "beamsize"].astype("float" , errors="ignore")
+        self._dataframe.loc[:, "priority"].astype("Int64", errors="ignore")
 
 
         '''
@@ -423,11 +424,26 @@ class PuckPandasModel(BasePandasModel):
                 return value == 'nan' or value == ''
             return  pd.isna(value)
 
-        default_values = {'transmission': '20', 'targetresolution': '2.0', 'beamsize': '30', 
-                          'deltaphi': '0.25', 'exposure': '0.05', 'totalphi': '180', 'collectiontype':'centering',
-                          }
-        error_check = True
 
+        def fill_empty_values(row):
+            error_check = True
+            for key in default_values:
+                if checknan(row[key]):
+                    if key == 'folder':
+                        position = int(float(row['position']))
+                        row[key] = f"{row['puckname']}_{position:02.0f}"
+                    else:
+                        row[key] = default_values[key]
+
+                    error_check = False
+            return error_check
+
+        default_values = {'transmission': '20', 'targetresolution': '2.0', 'beamsize': '30', 
+                          'deltaphi': '0.25', 'exposure': '0.05', 'totalphi': '180', 'collectiontype':'centering', 
+                          'priority': '0',
+                          }
+        #error_check = data.apply(fill_empty_values, axis=0)
+        error_check = True
         for column in default_values.keys():
             empty_rows = (data[column].map(checknan))
             if len(data[empty_rows]):
@@ -438,6 +454,10 @@ class PuckPandasModel(BasePandasModel):
                 self._changeCellColors(column_index, empty_rows.index, QColor(Qt.GlobalColor.yellow))
                 error_check = False
         return error_check
+        
+
+        
+        
 
 
 class DewarPandasModel(BasePandasModel):

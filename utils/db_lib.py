@@ -4,6 +4,7 @@ import time
 import getpass
 import redis
 import json
+from utils.redis_connections import RedisConnection, RedisGetter
 
 
 
@@ -32,6 +33,8 @@ class DBConnection:
         print(self.redisport, self.redishost)
         self.client = redis.Redis(host=self.redishost, port=self.redisport, db=1, decode_responses=True)
         self.beamline_id = beamline_id
+        self.redisconnection = RedisConnection(client = self.client, beamline_id = self.beamline_id, owner = owner)
+        self.redisgetter = RedisGetter(client = self.client, beamline_id = self.beamline_id, owner = owner)
         if owner is not None:
             self.owner = getpass.getuser()
         else:
@@ -163,11 +166,13 @@ class DBConnection:
 
     def sendToRedis(self, key, value):
         try:
+            #print(f"Sending to Redis: {key} -> {value}")
             message = json.dumps(value)
             self.client.set(key,message)
             self.publish_update('{}:Pub'.format(key),value)
             return True
         except Exception as e:
+            print(f"Failed to send to Redis: {e}")
             return False
         
     def publish_update(self, key, value):
@@ -181,7 +186,7 @@ class DBConnection:
         try:
             message = json.dumps(value)
             self.client.publish(key, message)
-            print(f"Published update to '{key}': {message}")
+            #print(f"Published update to '{key}': {message}")
         except Exception as e:
             print(f"Failed to publish update: {e}")
 
@@ -191,3 +196,5 @@ class DBConnection:
             return self.client.get(key)
         except Exception as e:
             return None
+
+

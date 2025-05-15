@@ -4,6 +4,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from qtpy.QtCore import Qt
 
 from utils.db_lib import DBConnection
+from utils.redis_connections import RedisGetter
 
 import json
 
@@ -16,27 +17,25 @@ class PuckDialog(QtWidgets.QDialog):
         self.position = container_position
         print("in puck_dialog, position= {}".format(self.position))
         print("in puck_dialog, all pucks importing = {}".format(self.all_pucks))
-        self.redis_connection = DBConnection()
+        self.redis_connection = RedisGetter()
         our_button = self.parent.allButtonList[int(self.position)]
         self.initData()
         self.initUI()
 
     def initData(self):
         puckListUnsorted = self.all_pucks
-        puckList = sorted(puckListUnsorted, key=lambda i: i["name"], reverse=False)
-        dewarObj = self.redis_connection.getFromRedis('NyxDewar')
-        dewarObj = json.loads(dewarObj)
+        puckList = sorted(puckListUnsorted, reverse=False)
+        container_pucks = self.redis_connection.getContainerPucks()
         #dewarObj = json.loads(dewarObj)
-        print(dewarObj)
-        pucksInDewar = set(dewarObj["pucks"])
+        pucksInDewar = set(container_pucks)
         self.model = QtGui.QStandardItemModel(self)
         self.proxyModel = QtCore.QSortFilterProxyModel(self)
         labels = ["Name"]
         self.model.setHorizontalHeaderLabels(labels)
         self.puckName = None
         for puck in puckList:
-            if puck["name"] not in pucksInDewar:
-                item = QtGui.QStandardItem(puck["name"])
+            if puck not in pucksInDewar:
+                item = QtGui.QStandardItem(puck)
                 # Adding meta data to the puck. Each piece of meta data is identified using
                 # an int value, in this case is Qt.UserRole for puck modified time. This metadata is used
                 # to sort pucks

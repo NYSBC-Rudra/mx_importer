@@ -3,6 +3,7 @@ import typing
 
 from qtpy import QtWidgets
 from utils.db_lib import DBConnection
+from utils.redis_connections import RedisConnection
 from gui.dialog.puck_dialog import PuckDialog
 import json
 
@@ -15,32 +16,26 @@ class DewarDialog(QtWidgets.QDialog):
         #self.action = action
         self.action = "remove"
         self.parent = parent
-        self.connection = DBConnection()
+        try:
+            self.connection = RedisConnection()
+        except Exception as e:
+            raise ValueError("Error in redis connection: {}".format(e))
         self.initData()
         self.initUI()
 
     def initData(self):
-        dewarObj = self.connection.getFromRedis('NyxDewar')
-
-        #print(dewarObj)
-        #making dewar object if not present
-        if dewarObj == '' or dewarObj == None:
-            dewarObj = {"content": [""] * (self.pucksPerDewarSector * self.dewarSectors), 'name': 'NyxDewar', 'pucks':[]}
-            self.connection.sendToRedis('NyxDewar',dewarObj)
-            dewarObj = self.connection.getFromRedis('NyxDewar')
-        dewarObj = json.loads(dewarObj)
-        puckLocs = dewarObj["content"]
+        dewar_capacity = self.connection.main_container_capacity
+        # TODO REMOVE THIS PRINT
+        print(f'The size of this dewar is {dewar_capacity}')
+        #dewarObj = json.loads(dewarObj)
+        #puckLocs = dewarObj["content"]
         #[''*28]
         self.data = []
         self.dewarPos = None
         #max 29 values in dewar object
-        for i in range(len(puckLocs)):
-            if puckLocs[i] != "":
-                puck_name = puckLocs[i]['name']
-                #owner = db_lib.getContainerByID(puckLocs[i])["owner"]
-                self.data.append(puck_name)
-            else:
-                self.data.append("Empty")
+        for i in range(1, dewar_capacity + 1):
+            puckname = self.connection.container[i]
+            self.data.append(puckname)
         #logger.info(self.data)
 
     def initUI(self):
@@ -82,18 +77,18 @@ class DewarDialog(QtWidgets.QDialog):
 
     def on_button(self, n):
         
-        if 'Empty' in self.allButtonList[int(n)].text():
+        if 'empty' in self.allButtonList[int(n)].text():
             self.dewarPos = n
             #db_lib.removePuckFromDewar(daq_utils.beamline, int(n))
             #print(self.parent.all_pucks)
             #self.puck_window = PuckDialog(self, self.parent.all_pucks, int(n))
-            chosen_puck = PuckDialog.getPuckName(self,self.parent.all_pucks,int(n))[0]
+            chosen_puck = PuckDialog.getPuckName(self,self.parent.redis_pucklist,int(n))[0]
             self.fillContainerPosition(int(self.dewarPos), chosen_puck)
 
         else:
             self.dewarPos = n
             self.removePuckFromDewar(int(self.dewarPos))
-            self.allButtonList[int(n)].setText("Empty")
+            self.allButtonList[int(n)].setText("empty")
 
 
     def containerCancelCB(self):
@@ -102,29 +97,39 @@ class DewarDialog(QtWidgets.QDialog):
 
     def fillContainerPosition(self, position, puckName):
         #finding correct puck from all pucks
-        possible_pucks = [puck for puck in self.parent.all_pucks if puck["name"] == puckName]
+        possible_pucks = [puck for puck in self.parent.all_redis_pucks if puck["name"] == puckName]
         if len(possible_pucks) == 0 or len(possible_pucks) > 1:
             QtWidgets.QMessageBox.warning(self, "Error", "{} of {} found in list".format(len(possible_pucks), puckName))
             return
         puck = possible_pucks[0]
-        dewarObj = self.connection.getFromRedis('NyxDewar')
-        dewarObj = json.loads(dewarObj)
+
+        self.connection.addPuckToMain(puck= puck, position = position + 1)
+
+
+
+
+        #dewarObj = self.connection.getFromRedis('NyxDewar')
+        #dewarObj = json.loads(dewarObj)
         #print(dewarObj['content'])
-        dewarObj['content'][int(position)] = puck
-        dewarObj['pucks'].append(puckName)
+        #dewarObj['content'][int(position)] = puck
+        #dewarObj['pucks'].append(puckName)
         #print('sending dewar to redis \n {}'.format(dewarObj))
-        self.connection.sendToRedis('NyxDewar',dewarObj)
+        #self.connection.sendToRedis('NyxDewar',dewarObj)
         self.allButtonList[position].setText(puckName)
 
 
 
     def removePuckFromDewar(self, position):
-        dewarObj = self.connection.getFromRedis('NyxDewar')
-        dewarObj = json.loads(dewarObj)
-        puckname = dewarObj['content'][position]['name']
-        dewarObj['content'][position] = ''
-        dewarObj['pucks'].remove(puckname)
-        self.connection.sendToRedis('NyxDewar',dewarObj)
+        self.connection.removePuckFromMain(position=position + 1)
+
+
+
+        #dewarObj = self.connection.getFromRedis('NyxDewar')
+        #dewarObj = json.loads(dewarObj)
+        #puckname = dewarObj['content'][position]['name']
+        #dewarObj['content'][position] = ''
+        #dewarObj['pucks'].remove(puckname)
+        #self.connection.sendToRedis('NyxDewar',dewarObj)
         return
 
 
