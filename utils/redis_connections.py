@@ -88,6 +88,7 @@ class RedisConnection:
         self.container['pucks'].add(puckname)
         self.container[position] = puckname
         self.client.set(f"{self.main_container}:{position}", json.dumps(puckname))
+        self.client.publish(f"{self.main_container}:{position}", json.dumps(puckname))
         #adding puck to container pucklist
         self.client.sadd(f"{self.main_container}:pucks", json.dumps(puckname))
         #setting everything about puck (for info purposes)
@@ -116,13 +117,12 @@ class RedisConnection:
             self.client.delete(*self.client.keys(delete_puck))
             self.client.srem(f"{self.main_container}:pucks", json.dumps(self.container[position]))
             self.client.set(f"{self.main_container}:{position}", json.dumps('empty'))
-            print(f"all pucks {self.container['pucks']} typeof datatype : {type(self.container['pucks'])}")
+            self.client.publish(f"{self.main_container}:{position}", json.dumps('empty'))
             try:
                 self.container['pucks'].remove(self.container[position])
             except Exception as e:
                 print(e)
             self.container[position] = 'empty'
-            self.client.set(f"{self.main_container}:{position}", json.dumps('empty'))
 
 
     def addSampleTopuck(self, sample, puck, position: int):
