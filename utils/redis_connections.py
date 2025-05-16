@@ -227,7 +227,13 @@ class RedisGetter:
 
     def getPuckPins(self, puck_name: str):
         try:
-            return self.client.smembers(f"{self.maincontainer}:{puck_name}:pins")
+            pins = self.client.smembers(f"{self.maincontainer}:{puck_name}:pins")
+            if pins:
+                a = set([json.loads(pin) for pin in pins])
+                return a
+            else:
+                print(f"No pins found in puck {self.maincontainer}:{puck_name}.")
+                return []
         except Exception as e:
             print(f"Error getting puck pins: {e}")
             return None
@@ -274,6 +280,17 @@ class RedisGetter:
         except Exception as e:
             print(f"Error getting sample data: {e}")
             return None
+    
+    def getPuckBitmap(self, puckname):
+        number_of_pins = len(self.getPuckPins(puckname))
+        bitmap = []
+        current_position = 1
+        while sum(bitmap) < number_of_pins:
+            bit = self.client.getbit(f"{self.maincontainer}:{puckname}:bitmap", current_position)
+            bitmap.append(bit)
+            current_position += 1
+        return bitmap
+
         
     def get(self, key):
         """
