@@ -70,10 +70,10 @@ class ControlMain(QtWidgets.QMainWindow):
     def validatePuckLists(self):
         pucklist_path = Path(self.config["list_path"])
         if not pucklist_path.exists():
-            self.showModalMessage(
-                "Error",
-                f"Puck list file {pucklist_path} not found. White list and black list are empty",
-            )
+            #self.showModalMessage(
+            #    "Error",
+            #    f"Puck list file {pucklist_path} not found. White list and black list are empty",
+            #)
             self.pucklists = {"blacklist": [], "whitelist": [], "etched": []}
         else:
             self.parsePuckList(pucklist_path)
@@ -262,7 +262,7 @@ class ControlMain(QtWidgets.QMainWindow):
                 if header_correct:
                     #HEADER IS CORRECT, PUCKS IMPORTED CORRECTLY, OFF TO VAlIDATING DATA
                     self.model = PuckPandasModel(data)
-                    self.model.setPuckLists(self.pucklists)
+                    #self.model.setPuckLists(self.pucklists)
                     self.validateExcel()
                     #does does preprocess data and validates data
                     self.tableView.setModel(self.model)

@@ -127,17 +127,53 @@ class PuckPandasModel(BasePandasModel):
             | Qt.ItemFlag.ItemIsEditable
         )
 
+
+    def _validate_data(self, col: pd.Series) -> None:
+        true_bool = True
+        exception_string = 'Encountered errors while validating:'
+        if col.name == 'proposalnum':
+            if len(col.unique()) > 1:
+                true_bool = False
+                exception_string += f' Proposal numbers are not the same for all samples'
+            else:
+                col = col.astype('str')
+                col = col.str.replace(r"\D", "", regex=True)
+                true_bool = self._checkProposalNumbers(col)
+            
+        if col.name == 'samplename':
+            if not self._checkDuplicateSamples(col):
+                true_bool = False
+                exception_string += f' Duplicate sample names found'
+            if not self._checkEmptySamples(col):
+                true_bool = False
+                exception_string += f' Empty sample names found'
+            if not self._checkSampleNames(col):
+                true_bool = False
+                exception_string += f' Invalid sample names found'
+        if not true_bool:
+            raise TypeError(
+                f"{exception_string}"
+            )
+                
+                    
+
+                
+
+            
     def validateData(self, config) -> None:
         self.resetColors()
-        if not self._matchMasterlist(self._dataframe, config):
-            raise TypeError(
-                "Pucks submitted do not match master list. Pucks not in whitelist or etched list are in yellow. Pucks in blacklist are in red"
-            )
+        #if not self._matchMasterlist(self._dataframe, config):
+        #    raise TypeError(
+        #        "Pucks submitted do not match master list. Pucks not in whitelist or etched list are in yellow. Pucks in blacklist are in red"
+        #    )
         '''
         sample information checkers
         
         '''
 
+        self._dataframe.apply(self._validate_data)
+
+        '''
         if not self._checkSampleNames(self._dataframe):
             raise TypeError(
                 'Invalid Sample names found. Only numbers, letters, dash ("-"),'
@@ -155,11 +191,11 @@ class PuckPandasModel(BasePandasModel):
 
         if not self._checkProposalNumbers(self._dataframe):
             raise TypeError("Invalid proposal numbers")
-
+        '''
         if not self._checkDuplicatePuckPos(self._dataframe):
             raise TypeError("Duplicate Puck name and position combinations found")
         
-
+        
 
         
 
@@ -291,44 +327,41 @@ class PuckPandasModel(BasePandasModel):
         
 
 
-    def _checkProposalNumbers(self, data: pd.DataFrame) -> bool:
+    def _checkProposalNumbers(self, data: pd.Series) -> bool:
         proposalNumCol = "proposalnum"
         # Remove all letters from proposal numbers
-        data[proposalNumCol] = data[proposalNumCol].astype("str")
-        data[proposalNumCol] = data[proposalNumCol].str.replace(r"\D", "", regex=True)
+        #data[proposalNumCol] = data[proposalNumCol].astype("str")
+        #data[proposalNumCol] = data[proposalNumCol].str.replace(r"\D", "", regex=True)
 
         # Check if proposal numbers have 6 digits
-        indices = data[proposalNumCol][~data[proposalNumCol].map(len).eq(6)].index
-        col_index = data.columns.get_loc(proposalNumCol)
+        indices = data[~data.map(len).eq(6)].index
+        col_index = self._dataframe.columns.get_loc(proposalNumCol)
         if len(indices) > 0:
             self._changeCellColors(col_index, indices)
             return False
 
-        if len(data[proposalNumCol].unique()) > 1:
-            return False
-
         return True
 
-    def _checkDuplicateSamples(self, data: pd.DataFrame) -> bool:
-        column = "samplename"
-        duplicate_rows = data[data[column].duplicated(keep=False)]
-        duplicates = data[data.duplicated(column)]
-        counter = (duplicates.groupby(column).cumcount() + 1).astype(str).str.zfill(3)
-        data.loc[counter.index, column] += "_" + counter
+    def _checkDuplicateSamples(self, data: pd.Series) -> bool:
+        column = data.name
+        column_index = self._dataframe.columns.get_loc(data.name)
+        duplicated_data = data[data.duplicated(keep=False)]
+        counter = (duplicated_data.groupby(duplicated_data).cumcount() + 1).astype(str).str.zfill(3)
+        self._dataframe.loc[counter.index, column] += "_" + counter
 
-        if len(duplicate_rows):
-            column_index = data.columns.get_loc("samplename")
+        if len(duplicated_data):
+            column_index = self._dataframe.columns.get_loc("samplename")
             self._changeCellColors(
-                column_index, duplicate_rows.index, color=QColor(Qt.GlobalColor.yellow)
+                column_index, duplicated_data.index, color=QColor(Qt.GlobalColor.yellow)
             )
             return False
         return True
 
-    def _checkEmptySamples(self, data: pd.DataFrame) -> bool:
+    def _checkEmptySamples(self, data: pd.Series) -> bool:
         column = "samplename"
-        empty_rows = data[pd.isna(data[column])]
+        empty_rows = data[pd.isna(data)]
         if len(empty_rows):
-            column_index = data.columns.get_loc("samplename")
+            column_index = self._dataframe.columns.get_loc("samplename")
             self._changeCellColors(column_index, empty_rows.index)
             return False
         return True
@@ -339,26 +372,26 @@ class PuckPandasModel(BasePandasModel):
         ]
 
         if len(duplicate_rows):
-            column_index = data.columns.get_loc("puckname")
+            column_index = self._dataframe.columns.get_loc("puckname")
             self._changeCellColors(column_index, duplicate_rows.index)
-            column_index = data.columns.get_loc("position")
+            column_index = self._dataframe.columns.get_loc("position")
             self._changeCellColors(column_index, duplicate_rows.index)
             return False
         return True
 
-    def _checkSampleNames(self, data: pd.DataFrame) -> bool:
+    def _checkSampleNames(self, data: pd.Series) -> bool:
         sampleNameRegex = "[0-9a-zA-Z-_]{0,25}"
-        non_matching_rows = data[~data["samplename"].str.fullmatch(sampleNameRegex)]
+        non_matching_rows = data[~data.str.fullmatch(sampleNameRegex)]
         # replacing non-matching characters
-        data["samplename"] = data["samplename"].apply(
+        data = data.apply(
             lambda x: re.sub(r"[^0-9a-zA-Z-_]", "_", x) if isinstance(x, str) else ""
-        )
+    )
 
         # truncate strings to the first 25 characters
-        data["samplename"] = data["samplename"].apply(lambda x: x[:25])
+        data = data.apply(lambda x: x[:25])
 
         if len(non_matching_rows):
-            column_index = data.columns.get_loc("samplename")
+            column_index = self._dataframe.columns.get_loc("samplename")
             self._changeCellColors(
                 column_index,
                 non_matching_rows.index,
@@ -407,7 +440,7 @@ class PuckPandasModel(BasePandasModel):
 
     def _deltaphi_exposure_toltalphi_check(self, data: pd.DataFrame) -> bool:
         columns = ['deltaphi', 'exposure', 'totalphi']
-        data.apply(self._create_collection_request, axis=1)
+        #data.apply(self._create_collection_request, axis=1)
             
         
         return True
