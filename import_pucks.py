@@ -223,6 +223,8 @@ class ControlMain(QtWidgets.QMainWindow):
                 if data.empty:
                     print('no sheet')
                     continue
+                #data.dropna(how='all', ignore_index=True, inplace=True)
+                #print(data)
                 # Check if any row besides header row contains "puckname"
                 rows = (data.map(lambda x: str(x).lower() == required_columns_list[0])).any(
                     axis=1

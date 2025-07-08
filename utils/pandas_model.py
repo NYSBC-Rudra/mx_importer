@@ -264,6 +264,7 @@ class PuckPandasModel(BasePandasModel):
         self._dataframe.loc[:, "position"].astype("Int64", errors="ignore")
 
         self._dataframe.loc[:, "proposalnum"].astype("Int64", errors="ignore")
+        self._dataframe['proposalnum'] = self._dataframe['proposalnum'].round(0).astype("int")
 
 
 
@@ -334,8 +335,12 @@ class PuckPandasModel(BasePandasModel):
         #data[proposalNumCol] = data[proposalNumCol].str.replace(r"\D", "", regex=True)
 
         # Check if proposal numbers have 6 digits
+        # Remove decimals from proposal numbers if present
+        #data = data.round(0)
+        #data = data.astype("str", errors="ignore")
         indices = data[~data.map(len).eq(6)].index
         col_index = self._dataframe.columns.get_loc(proposalNumCol)
+        #print(indices)
         if len(indices) > 0:
             self._changeCellColors(col_index, indices)
             return False
