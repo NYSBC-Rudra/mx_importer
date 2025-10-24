@@ -24,7 +24,7 @@ from utils.db_lib import DBConnection
 from utils.pandas_model import DewarPandasModel, PuckPandasModel
 
 logger = logging.getLogger(__name__)
-logfile_path = Path("~/.puckimporter/puckimporter.log").expanduser()
+logfile_path = Path("./puckimporter.log").expanduser()
 logfile_path.parent.mkdir(parents=True, exist_ok=True)
 file_handler = logging.FileHandler(logfile_path)
 file_handler.setLevel(logging.INFO)
@@ -64,14 +64,16 @@ class ControlMain(QtWidgets.QMainWindow):
         # Default mode to start the application
         self._set_mode(Mode.MANUAL)
         self.all_pucks = []
+        self.redis_pucklist = []
+        self.all_redis_pucks = {}
 
     def validatePuckLists(self):
         pucklist_path = Path(self.config["list_path"])
         if not pucklist_path.exists():
-            self.showModalMessage(
-                "Error",
-                f"Puck list file {pucklist_path} not found. White list and black list are empty",
-            )
+            #self.showModalMessage(
+            #    "Error",
+            #    f"Puck list file {pucklist_path} not found. White list and black list are empty",
+            #)
             self.pucklists = {"blacklist": [], "whitelist": [], "etched": []}
         else:
             self.parsePuckList(pucklist_path)
@@ -209,19 +211,22 @@ class ControlMain(QtWidgets.QMainWindow):
             "puckname",
             "position",
             "samplename",
-            "model",
-            "sequence",
             "proposalnum",
         ]
         if filename:
             engine = self.identify_excel_format(filename)
             excel_file = pd.ExcelFile(filename, engine=engine)
             for sheet_name in excel_file.sheet_names:
+
                 data = excel_file.parse(sheet_name)
+                
                 if data.empty:
+                    print('no sheet')
                     continue
+                #data.dropna(how='all', ignore_index=True, inplace=True)
+                #print(data)
                 # Check if any row besides header row contains "puckname"
-                rows = (data.applymap(lambda x: str(x).lower() == "puckname")).any(
+                rows = (data.map(lambda x: str(x).lower() == required_columns_list[0])).any(
                     axis=1
                 )
 
@@ -233,6 +238,7 @@ class ControlMain(QtWidgets.QMainWindow):
                         if isinstance(col, str)
                     )
                 )
+                print("header_correct {}".format(header_correct))
                 if not rows.all() and not header_correct:
                     import_offset = data.loc[rows].first_valid_index()
                     if isinstance(import_offset, (int, np.integer)):
@@ -256,19 +262,25 @@ class ControlMain(QtWidgets.QMainWindow):
                     )
                 )
                 if header_correct:
+                    #HEADER IS CORRECT, PUCKS IMPORTED CORRECTLY, OFF TO VAlIDATING DATA
                     self.model = PuckPandasModel(data)
-                    self.model.setPuckLists(self.pucklists)
+                    #self.model.setPuckLists(self.pucklists)
                     self.validateExcel()
+                    #does does preprocess data and validates data
                     self.tableView.setModel(self.model)
                     break
             self.tableView.resizeColumnsToContents()
 
     def validateExcel(self):
+        
         if not isinstance(self.model, PuckPandasModel):
             return
         try:
+            #processing data from excel model
             self.model.preprocessData()
             self.model.validateData(self.config)
+            #TODO REMOVE THIS PRINT, PRINTING HERE FOR DEBUGGING PURPOSES
+            self.model._dataframe.to_excel("initial_data.xlsx", index=False)
             self.showModalMessage("Success", "Validated excel sucessfully")
 
         except TypeError as e:
@@ -314,12 +326,17 @@ class ControlMain(QtWidgets.QMainWindow):
             self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
             prevPuckName = None
             puck_id = None
+            redis_puck = None
+            previous_redis_puck = None
+            self.all_redis_pucks = []
             self.currentPucks = set()
             self.progress_dialog.show()
             self.progress_dialog.setValue(0)
             time.sleep(
                 0.25
             )  # Dumb sleep because progress dialog doesn't initialize fast enough
+            self.current_puck = None
+            self.previous_puck = None
             for i, row in enumerate(self.model.rows()):
                 print(f"Processing row {i}")
                 self.progress_dialog.setValue(i + 1)
@@ -329,17 +346,54 @@ class ControlMain(QtWidgets.QMainWindow):
                 if row["puckname"] != prevPuckName:
                     if puck_id is not None:
                         puck_id['proposal_number'] = propNum
+                        redis_puck['proposal_number'] = propNum
                         self.all_pucks.append(puck_id)
+                        self.all_redis_pucks.append(redis_puck)
                     puck_id = dbConnection.getOrCreateContainerID(
                         row["puckname"], 16, "16_pin_puck"
                     )
+                    previous_redis_puck = redis_puck
+                    redis_puck = dbConnection.redisconnection.createPuck(name = row["puckname"], capacity=16)
                     prevPuckName = row["puckname"]
 
                 # Create sample
-                sampleName: str = row["samplename"]
-                model = row["model"]
-                seq = row["sequence"]
+                '''
+                get sample information fromt the row
+                and create sample info dictionary
+                '''
+                sample_info ={}
+
+                sampleName: str = str(row["samplename"])
+                sample_position: int = int(float(row["position"]))
                 propNum = row["proposalnum"]
+                seq = None
+                model = row.get('model', 'Nan')
+                folder = row.get('folder')
+                if pd.isna(folder):
+                    folder = f"{row['puckname']}_{sample_position:02.0f}"
+                sample_info = {
+                    "folder": folder,
+                    "deltaphi": row.get("deltaphi", 0.25),
+                    "exposure": row.get("exposure", 0.05),
+                    "totalphi": row.get("totalphi", 180),
+                    "transmission": row.get("transmission", 20),
+                    "targetresolution": row.get("targetresolution", 2.0),
+                    "beamsize": row.get("beamsize", 30),
+                    "priority": row.get("priority", 'Nan'),
+                    "collectiontype": row.get("collectiontype", 'centering'),
+                    "model": model,
+                    "spacegroup": row.get("spacegroup", 'Nan'),
+                    "cellparameters": row.get("cellparameters", 'Nan'),
+                    "proposal_number" : propNum,
+                }
+                
+
+
+
+
+
+
+
                 sampleID = dbConnection.createSample(
                     str(sampleName),
                     "pin",
@@ -348,19 +402,27 @@ class ControlMain(QtWidgets.QMainWindow):
                     proposalID=propNum,
                     container=puck_id['name'],
                 )
+                redis_sample = dbConnection.redisconnection.createSample(sample_name = sampleName, sample_data = sample_info)
                 if puck_id['name'] not in self.currentPucks:
                     #dbConnection.emptyContainer(puck_id)
                     self.currentPucks.add(puck_id['name'])
-                puck_id[int(row["position"]) - 1] = sampleID
+                redis_puck = dbConnection.redisconnection.addSampleTopuck(sample = redis_sample, puck = redis_puck, position = sample_position)
+                puck_id[sample_position - 1] = sampleID
                 #dbConnection.insertIntoContainer(
                 #    puck_id, int(row["position"]) - 1, sampleID
                 #)
             puck_id['proposal_number'] = propNum
+            redis_puck['proposal_number'] = propNum
             self.all_pucks.append(puck_id)
+            self.all_redis_pucks.append(redis_puck)
+            self.redis_pucklist = [x['name'] for x in self.all_redis_pucks]
+            #print(self.all_redis_pucks)
             #print(self.all_pucks)
-            dbConnection.sendToRedis('allpuckData', self.all_pucks)
+            #dbConnection.sendToRedis('allpuckData', self.all_pucks)
+            dbConnection.sendToRedis('redis_puck_data', self.all_redis_pucks)
         else:
             self.showModalMessage("Error", "Invalid data, will not upload to database")
+
 
     def _createMenuBar(self):
         menuBar = self.menuBar()

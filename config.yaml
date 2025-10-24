@@ -2,7 +2,7 @@
 admin_group: admin
 
 # Three letter acronym for the beamline
-beamline: TLA
+beamline: NYX
 
 # Hostname for the database along with its port
 database_host: localhost:8000
