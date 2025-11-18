@@ -477,7 +477,7 @@ class PuckPandasModel(BasePandasModel):
             return error_check
 
         default_values = {'transmission': '20', 'targetresolution': '2.0', 'beamsize': '30', 
-                          'deltaphi': '0.25', 'exposure': '0.05', 'totalphi': '180', 'collectiontype':'centering', 
+                          'deltaphi': '0.25', 'exposure': '0.05', 'totalphi': '180', 'collectiontype':'standard', 
                           'priority': '0',
                           }
         #error_check = data.apply(fill_empty_values, axis=0)

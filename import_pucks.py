@@ -277,8 +277,22 @@ class ControlMain(QtWidgets.QMainWindow):
             return
         try:
             #processing data from excel model
-            self.model.preprocessData()
-            self.model.validateData(self.config)
+            self.model.blockSignals(True)
+            self.tableView.setUpdatesEnabled(False)
+
+            try:
+                # Do all preprocessing and validation WITHOUT GUI updates
+                self.model.preprocessData()
+                self.model.validateData(self.config)
+
+            finally:
+                # RE-ENABLE and do ONE bulk update
+                self.model.blockSignals(False)
+                self.tableView.setUpdatesEnabled(True)
+                self.model.layoutChanged.emit()  # Single refresh
+
+
+
             #TODO REMOVE THIS PRINT, PRINTING HERE FOR DEBUGGING PURPOSES
             self.model._dataframe.to_excel("initial_data.xlsx", index=False)
             self.showModalMessage("Success", "Validated excel sucessfully")
